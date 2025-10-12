@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 type Movie = {
   id: number;
@@ -12,7 +13,7 @@ type Movie = {
   release_date: string;
 };
 
-export default function SearchPage() {
+function SearchContent() {
   const searchParams = useSearchParams();
   const query = searchParams.get("q") || "";
   const [movies, setMovies] = useState<Movie[]>([]);
@@ -39,43 +40,51 @@ export default function SearchPage() {
     fetchSearch();
   }, [query]);
 
+  if (loading) return <p className="text-gray-500">검색 중입니다...</p>;
+  if (!query) return <p className="text-gray-500">검색어를 입력해주세요.</p>;
+  if (movies.length === 0)
+    return <p className="text-gray-500">검색 결과가 없습니다.</p>;
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 max-w-6xl">
+      {movies.map((movie) => (
+        <Link
+          key={movie.id}
+          href={`/movie/${movie.id}`}
+          className="bg-white rounded-2xl overflow-hidden shadow hover:shadow-lg transition"
+        >
+          <img
+            src={
+              movie.poster_path
+                ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+                : "/no-image.png"
+            }
+            alt={movie.title}
+            className="w-full h-72 object-cover"
+          />
+          <div className="p-4">
+            <h2 className="text-lg font-semibold">{movie.title}</h2>
+            <p className="text-gray-500 text-sm">
+              {movie.release_date?.split("-")[0]}
+            </p>
+            <p className="text-yellow-500 font-semibold mt-1">
+              ⭐ {movie.vote_average?.toFixed(1)}
+            </p>
+          </div>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+export default function SearchPage() {
   return (
     <main className="flex flex-col items-center min-h-screen py-8">
       <h1 className="text-3xl font-bold mb-6">🔍 검색 결과</h1>
-      {loading ? (
-        <p className="text-gray-500">검색 중입니다...</p>
-      ) : movies.length === 0 ? (
-        <p className="text-gray-500">검색 결과가 없습니다.</p>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 max-w-6xl">
-          {movies.map((movie) => (
-            <Link
-              key={movie.id}
-              href={`/movie/${movie.id}`}
-              className="bg-white rounded-2xl overflow-hidden shadow hover:shadow-lg transition"
-            >
-              <img
-                src={
-                  movie.poster_path
-                    ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-                    : "/no-image.png"
-                }
-                alt={movie.title}
-                className="w-full h-72 object-cover"
-              />
-              <div className="p-4">
-                <h2 className="text-lg font-semibold">{movie.title}</h2>
-                <p className="text-gray-500 text-sm">
-                  {movie.release_date?.split("-")[0]}
-                </p>
-                <p className="text-yellow-500 font-semibold mt-1">
-                  ⭐ {movie.vote_average?.toFixed(1)}
-                </p>
-              </div>
-            </Link>
-          ))}
-        </div>
-      )}
+      {/* 👇 Suspense로 감싸기 */}
+      <Suspense fallback={<p className="text-gray-500">로딩 중...</p>}>
+        <SearchContent />
+      </Suspense>
     </main>
   );
 }
