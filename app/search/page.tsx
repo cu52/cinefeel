@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import MovieCard from "@/components/MovieCard";
 import MovieDetailModal from "@/components/MovieDetailModal";
@@ -35,7 +35,8 @@ const GENRES: GenreOption[] = [
   { id: 10752, name: "전쟁" },
 ];
 
-export default function SearchPage() {
+// 🔹 실제 검색 페이지 로직 / UI 전부 여기로 이동
+function SearchPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -361,5 +362,20 @@ export default function SearchPage() {
         />
       )}
     </main>
+  );
+}
+
+// 🔹 Next 15 규칙: useSearchParams를 쓰는 컴포넌트는 Suspense로 감싸기
+export default function SearchPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex flex-col items-center min-h-screen py-8">
+          <p className="text-sm text-gray-500">검색 페이지를 불러오는 중...</p>
+        </main>
+      }
+    >
+      <SearchPageInner />
+    </Suspense>
   );
 }

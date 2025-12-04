@@ -1,5 +1,5 @@
 // app/api/bookmarks/[tmdbId]/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyToken } from "@/lib/auth";
 
@@ -66,11 +66,13 @@ async function getUserAndBookmark(request: Request, tmdbIdParam: string) {
 //  - 메모(note) / 공개여부(isPublic) / 태그(tags) 수정
 // ===========================
 export async function PATCH(
-  request: Request,
-  { params }: { params: { tmdbId: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ tmdbId: string }> }
 ) {
   try {
-    const ctx = await getUserAndBookmark(request, params.tmdbId);
+    const { tmdbId } = await params;
+
+    const ctx = await getUserAndBookmark(request, tmdbId);
     if ("error" in ctx) return ctx.error;
 
     const { bookmark } = ctx;
@@ -151,11 +153,13 @@ export async function PATCH(
 //  - 북마크 삭제
 // ===========================
 export async function DELETE(
-  request: Request,
-  { params }: { params: { tmdbId: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ tmdbId: string }> }
 ) {
   try {
-    const ctx = await getUserAndBookmark(request, params.tmdbId);
+    const { tmdbId } = await params;
+
+    const ctx = await getUserAndBookmark(request, tmdbId);
     if ("error" in ctx) return ctx.error;
 
     const { bookmark } = ctx;
