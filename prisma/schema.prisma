@@ -1,0 +1,61 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String     @id @default(cuid())
+  email     String     @unique
+  password  String
+  nickname  String
+  bookmarks Bookmark[]
+  likes     Like[]
+  createdAt DateTime   @default(now())
+}
+
+model Bookmark {
+  id         Int           @id @default(autoincrement())
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  tmdbId     Int
+  title      String
+  posterPath String?
+  note       String?
+  isPublic   Boolean       @default(false)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  tags       BookmarkTag[]
+  likes      Like[]
+}
+
+model Tag {
+  id        Int           @id @default(autoincrement())
+  name      String        @unique
+  bookmarks BookmarkTag[]
+}
+
+model BookmarkTag {
+  bookmark   Bookmark @relation(fields: [bookmarkId], references: [id], onDelete: Cascade)
+  bookmarkId Int
+  tag        Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tagId      Int
+
+  @@id([bookmarkId, tagId])
+}
+
+model Like {
+  id         Int       @id @default(autoincrement())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  bookmark   Bookmark  @relation(fields: [bookmarkId], references: [id], onDelete: Cascade)
+  bookmarkId Int
+  createdAt  DateTime  @default(now())
+
+  @@unique([userId, bookmarkId])
+}

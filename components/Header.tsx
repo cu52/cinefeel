@@ -1,47 +1,119 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
+import { usePathname } from "next/navigation";
+
+type MeResponse = {
+  authenticated: boolean;
+  user: {
+    id: number;
+    email: string;
+    nickname: string;
+  } | null;
+};
 
 export default function Header() {
-  const router = useRouter();
-  const [query, setQuery] = useState("");
+  const [me, setMe] = useState<MeResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const pathname = usePathname();
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (query.trim()) {
-      router.push(`/search?q=${encodeURIComponent(query)}`);
-      setQuery("");
+  useEffect(() => {
+    const loadMe = async () => {
+      try {
+        const res = await fetch("/api/auth/me", {
+          credentials: "include",
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          setMe({ authenticated: false, user: null });
+        } else {
+          setMe(data);
+        }
+      } catch {
+        setMe({ authenticated: false, user: null });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadMe();
+  }, [pathname]);
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+      window.location.href = "/";
+    } catch (err) {
+      console.error(err);
     }
   };
 
+  // 🔹 로고 클릭 시 동작
+  const handleLogoClick = (e: MouseEvent<HTMLAnchorElement>) => {
+    if (pathname === "/") {
+      // 이미 홈에 있는 경우: 네비게이션 막고, 홈 초기화 이벤트만 발행
+      e.preventDefault();
+      window.dispatchEvent(new Event("cinefeel-home-reset"));
+    }
+    // 다른 페이지일 때는 Link 기본 동작으로 / 로 이동
+  };
+
   return (
-    <header className="w-full bg-white shadow-sm">
-      <nav className="max-w-5xl mx-auto flex items-center justify-between p-4">
-        {/* 왼쪽: 로고 */}
-        <Link href="/" className="text-2xl font-bold text-blue-600">
-          CineFeel
+    <header className="w-full bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+      <Link
+        href="/"
+        onClick={handleLogoClick}
+        className="text-xl font-bold flex items-center gap-1 cursor-pointer"
+      >
+        🎬 CineFeel
+      </Link>
+
+      <nav className="flex items-center gap-4">
+        <Link href="/explore" className="text-sm hover:underline">
+          공유 북마크
+        </Link>
+        <Link href="/my/bookmarks" className="text-sm hover:underline">
+          내 북마크
+        </Link>
+        <Link href="/search" className="text-sm hover:underline">
+          검색
         </Link>
 
-        {/* 오른쪽: 메뉴 + 검색창 */}
-        <div className="flex gap-6 text-gray-700 items-center">
-          <Link href="/">홈</Link>
-          <Link href="/my">내 북마크</Link>
-          <Link href="/login">로그인</Link>
-          <Link href="/signup">회원가입</Link>
-
-          {/* 🔍 검색창 추가 (이 부분이 새로 들어가는 코드) */}
-          <form onSubmit={handleSearch}>
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="영화 검색..."
-              className="border rounded px-2 py-1 text-sm"
-            />
-          </form>
-        </div>
+        {loading ? (
+          <span className="text-sm text-slate-300">...</span>
+        ) : me?.authenticated && me.user ? (
+          <>
+            <span className="text-sm text-slate-300">
+              {me.user.nickname}님
+            </span>
+            <button
+              onClick={handleLogout}
+              className="px-3 py-1 rounded bg-red-500 hover:bg-red-600 text-sm"
+            >
+              로그아웃
+            </button>
+          </>
+        ) : (
+          <>
+            <Link
+              href="/login"
+              className="px-3 py-1 rounded bg-blue-500 hover:bg-blue-600 text-sm"
+            >
+              로그인
+            </Link>
+            <Link
+              href="/signup"
+              className="px-3 py-1 rounded bg-green-500 hover:bg-green-600 text-sm"
+            >
+              회원가입
+            </Link>
+          </>
+        )}
       </nav>
     </header>
   );

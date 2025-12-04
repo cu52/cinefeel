@@ -15,7 +15,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ko">
-      <body className="text-gray-900">
+      <body className="bg-slate-900 text-white">
         <BookmarkProvider>
           <Header />
           <main className="max-w-5xl mx-auto p-4">{children}</main>

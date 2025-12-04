@@ -1,55 +1,104 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
-export default function SignupPage() {
+export default function SignUpPage() {
+  const router = useRouter();
+
   const [email, setEmail] = useState("");
+  const [nickname, setNickname] = useState("");
   const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
+  const [passwordCheck, setPasswordCheck] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (password !== confirm) {
+
+    if (!email || !password || !nickname) {
+      alert("모든 필드를 입력해 주세요.");
+      return;
+    }
+    if (password !== passwordCheck) {
       alert("비밀번호가 일치하지 않습니다.");
       return;
     }
-    // 실제 회원가입 API는 나중에 연동 예정
-    alert(`회원가입 성공!\n이메일: ${email}`);
-  };
+
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, nickname }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message || "회원가입 실패");
+        setLoading(false);
+        return;
+      }
+
+      alert("회원가입이 완료되었습니다!");
+      router.push("/login");
+    } catch (err) {
+      console.error(err);
+      alert("오류가 발생했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
-    <main className="flex flex-col items-center justify-center h-screen">
-      <h1 className="text-3xl font-bold mb-6">회원가입</h1>
+    <main className="min-h-screen flex justify-center items-center px-6">
       <form
         onSubmit={handleSubmit}
-        className="flex flex-col w-80 gap-4 bg-white p-6 rounded-2xl shadow"
+        className="w-full max-w-sm bg-white shadow p-6 rounded-lg"
       >
+        <h2 className="text-2xl font-bold mb-4 text-center">회원가입</h2>
+
+        <label className="block mb-2 text-sm font-medium">이메일</label>
         <input
           type="email"
-          placeholder="이메일"
-          className="border p-2 rounded"
+          className="w-full border px-3 py-2 rounded mb-4"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
+
+        <label className="block mb-2 text-sm font-medium">닉네임</label>
+        <input
+          type="text"
+          className="w-full border px-3 py-2 rounded mb-4"
+          value={nickname}
+          onChange={(e) => setNickname(e.target.value)}
+        />
+
+        <label className="block mb-2 text-sm font-medium">비밀번호</label>
         <input
           type="password"
-          placeholder="비밀번호"
-          className="border p-2 rounded"
+          className="w-full border px-3 py-2 rounded mb-4"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
+
+        <label className="block mb-2 text-sm font-medium">비밀번호 확인</label>
         <input
           type="password"
-          placeholder="비밀번호 확인"
-          className="border p-2 rounded"
-          value={confirm}
-          onChange={(e) => setConfirm(e.target.value)}
+          className="w-full border px-3 py-2 rounded mb-4"
+          value={passwordCheck}
+          onChange={(e) => setPasswordCheck(e.target.value)}
         />
+
         <button
           type="submit"
-          className="bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
+          disabled={loading}
+          className={`w-full py-2 rounded text-white font-semibold ${
+            loading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
+          }`}
         >
-          회원가입
+          {loading ? "처리 중..." : "회원가입"}
         </button>
       </form>
     </main>
